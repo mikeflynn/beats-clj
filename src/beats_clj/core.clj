@@ -1,6 +1,6 @@
 (ns beats-clj.core
   (:require [clojure.java.io :as io]
-            [clj-http.client :as http]
+            [org.httpkit.client :as http]
             [cheshire.core :as json]))
 
 (def #^{:no-doc true} base-url "https://partner.api.beatsmusic.com/v1")
@@ -20,13 +20,13 @@
 (defmulti ^:no-doc send-http (fn [method url params headers] method))
 
 (defmethod send-http :get [method url params headers]
-  (http/get (str base-url url) {:headers headers
-                                :throw-exceptions false
+  (http/get (str base-url url) {:timeout 200
+                                :headers headers
                                 :query-params params}))
 
 (defmethod send-http :post [method url params headers]
-  (http/post (str base-url url) {:headers headers
-                                 :throw-exceptions false
+  (http/post (str base-url url) {:timeout 200
+                                 :headers headers
                                  :form-params params}))
 
 (defn- check-auth
@@ -45,18 +45,19 @@
 
 (defn- api-request
   "Wrapper to HTTP client that makes the request to the API."
-  [method url params headers]
+  [method url params headers & {:keys [forget]}]
   (let [params (if (not (contains? params "client_id")) (assoc params :client_id *app-key*) params)
         headers (if (not headers) {} headers)
         response (send-http method url (clean-params params) headers)]
-    (try
-      (let [body (->> (:body response)
-                      json/parse-string
-                      clojure.walk/keywordize-keys)]
-        (if (= (:code body) "OK")
-          body
-          false))
-      (catch Exception e false))))
+    (if (not forget)
+        (try
+          (let [body (->> (:body @response)
+                          json/parse-string
+                          clojure.walk/keywordize-keys)]
+            (if (= (:code body) "OK")
+              body
+              false))
+          (catch Exception e false)))))
 
 (defn search
   "Search for tracks or albums."
@@ -78,7 +79,7 @@
   (catch Exception e {})))
 
 (defn playlist-add
-  "Add a given tracks to a given playlist; Adds track in batches of 25. (auth required)"
+  "Add a given tracks to a given playlist; Adds track in batches of 25; Returns nil (auth required)"
   [playlist-id track-ids & {:keys [auth append]
                             :or {append true}}]
   (check-auth auth)
@@ -91,7 +92,7 @@
     (map #(try
             (let [params (->> (map (fn [x] (str "track_ids=" x)) %)
                               (clojure.string/join "&"))]
-              (api-request method endpoint params headers))
+              (api-request method endpoint params headers :forget true))
             (catch Exception e {})))))
 
 (defn playlist-list
@@ -167,7 +168,7 @@
       (catch Exception e {:error (.getMessage e)}))))
 
 (defn library-modify
-  "Add or remove one or more tracks to your library. (auth required)"
+  "Add or remove one or more tracks to your library; Returns nil (auth required)"
   [user-id track-ids & {:keys [action auth]
                         :or {action :remove}}]
   (check-auth auth)
@@ -184,7 +185,7 @@
           (let [batches (partition-all 25 track-ids)]
             (map #(let [params (->> (map (fn [x] (str "ids=" x)) %)
                                     (clojure.string/join "&"))]
-              (api-request method endpoint params headers)))))
+              (api-request method endpoint params headers :forget true)))))
       (catch Exception e {:error (.getMessage e)}))))
 
 (defn library-add
