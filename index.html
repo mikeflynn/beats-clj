@@ -13,13 +13,13 @@
     <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
     <![endif]-->
 
-    <title>Beats-clj by mikeflynn</title>
+    <title>beats-clj by mikeflynn</title>
   </head>
 
   <body>
     <header>
       <div class="inner">
-        <h1>Beats-clj</h1>
+        <h1>beats-clj</h1>
         <h2>A Clojure library to interact with the Beats Music API.</h2>
         <a href="https://github.com/mikeflynn/beats-clj" class="button"><small>View project on</small>GitHub</a>
       </div>
@@ -28,37 +28,63 @@
     <div id="content-wrapper">
       <div class="inner clearfix">
         <section id="main-content">
-          <h3>
-<a name="welcome-to-github-pages" class="anchor" href="#welcome-to-github-pages"><span class="octicon octicon-link"></span></a>Welcome to GitHub Pages.</h3>
+          <h1>
+<a name="beats-clj" class="anchor" href="#beats-clj"><span class="octicon octicon-link"></span></a><code>beats-clj</code>
+</h1>
 
-<p>This automatic page generator is the easiest way to create beautiful pages for all of your projects. Author your page content here using GitHub Flavored Markdown, select a template crafted by a designer, and publish. After your page is generated, you can check out the new branch:</p>
+<p>A Clojure library to interact with the Beats Music API.
+Beats Music API: <a href="https://developer.beatsmusic.com/docs">developer.beatsmusic.com/docs</a></p>
 
-<pre><code>$ cd your_repo_root/repo_name
-$ git fetch origin
-$ git checkout gh-pages
-</code></pre>
+<h2>
+<a name="installation" class="anchor" href="#installation"><span class="octicon octicon-link"></span></a>Installation</h2>
 
-<p>If you're using the GitHub for Mac, simply sync your repository and you'll see the new branch.</p>
+<p><code>beats-clj</code> is available as a Maven artifact from Clojars:</p>
 
-<h3>
-<a name="designer-templates" class="anchor" href="#designer-templates"><span class="octicon octicon-link"></span></a>Designer Templates</h3>
+<div class="highlight highlight-clojure"><pre>  <span class="p">[</span><span class="nv">beats-clj</span> <span class="s">"0.8.0"</span><span class="p">]</span>
+</pre></div>
 
-<p>We've crafted some handsome templates for you to use. Go ahead and continue to layouts to browse through them. You can easily go back to edit your page before publishing. After publishing your page, you can revisit the page generator and switch to another theme. Your Page content will be preserved if it remained markdown format.</p>
+<h2>
+<a name="usage" class="anchor" href="#usage"><span class="octicon octicon-link"></span></a>Usage</h2>
 
-<h3>
-<a name="rather-drive-stick" class="anchor" href="#rather-drive-stick"><span class="octicon octicon-link"></span></a>Rather Drive Stick?</h3>
+<p>Require the library in your REPL:</p>
 
-<p>If you prefer to not use the automatic generator, push a branch named <code>gh-pages</code> to your repository to create a page manually. In addition to supporting regular HTML content, GitHub Pages support Jekyll, a simple, blog aware static site generator written by our own Tom Preston-Werner. Jekyll makes it easy to create site-wide headers and footers without having to copy them across every page. It also offers intelligent blog support and other advanced templating features.</p>
+<div class="highlight highlight-clojure"><pre>  <span class="p">(</span><span class="nf">require</span> <span class="o">'</span><span class="p">[</span><span class="nv">beats-clj.core</span> <span class="ss">:as</span> <span class="nv">beats</span><span class="p">])</span>
+</pre></div>
 
-<h3>
-<a name="authors-and-contributors" class="anchor" href="#authors-and-contributors"><span class="octicon octicon-link"></span></a>Authors and Contributors</h3>
+<p>...or in your project.clj file</p>
 
-<p>You can <a href="https://github.com/blog/821" class="user-mention">@mention</a> a GitHub username to generate a link to their profile. The resulting <code>&lt;a&gt;</code> element will link to the contributor's GitHub Profile. For example: In 2007, Chris Wanstrath (<a href="https://github.com/defunkt" class="user-mention">@defunkt</a>), PJ Hyett (<a href="https://github.com/pjhyett" class="user-mention">@pjhyett</a>), and Tom Preston-Werner (<a href="https://github.com/mojombo" class="user-mention">@mojombo</a>) founded GitHub.</p>
+<div class="highlight highlight-clojure"><pre>  <span class="p">(</span><span class="kd">ns </span><span class="nv">my-app.core</span>
+    <span class="p">(</span><span class="ss">:require</span> <span class="p">[</span><span class="nv">beats-clj.core</span> <span class="ss">:as</span> <span class="nv">core</span><span class="p">]))</span>
+</pre></div>
 
-<h3>
-<a name="support-or-contact" class="anchor" href="#support-or-contact"><span class="octicon octicon-link"></span></a>Support or Contact</h3>
+<p>Be sure to set your Beats API Application Key and Secret:</p>
 
-<p>Having trouble with Pages? Check out the documentation at <a href="http://help.github.com/pages">http://help.github.com/pages</a> or contact <a href="mailto:support@github.com">support@github.com</a> and we’ll help you sort it out.</p>
+<div class="highlight highlight-clojure"><pre>  <span class="p">(</span><span class="nf">beats/set-app-key!</span> <span class="s">"xxxxxx"</span><span class="p">)</span>
+  <span class="p">(</span><span class="nf">beats/set-app-secret!</span> <span class="s">"yyyyyyy"</span><span class="p">)</span>
+</pre></div>
+
+<p>You can see <a href="#">the full documentation here</a>.</p>
+
+<h2>
+<a name="authorization" class="anchor" href="#authorization"><span class="octicon octicon-link"></span></a>Authorization</h2>
+
+<p>The Beats API has both public, meaning only an API key is required, and private, meaning an authorization token from a valid Beats Music subscriber is required, endpoints. This library does not fully implement the OAuth2 handshake as it is a server-side library. To get a user's authentication token, and instead provides the API actions that accept the authentication token as an parameter.</p>
+
+<p>I've included <a href="#">a simple HTML file in the /resources directory</a> that will preform the OAuth2 handshake (once configured with your application credentials) and will output your authentication token. This can be used to get tokens for testing and serve as a reference point for implementation the full OAuth2 interaction in your application.</p>
+
+<p><em>Note: Be sure to update your Beats Application with the OAuth callback url of your test HTML file or you will get an error.</em></p>
+
+<h2>
+<a name="help" class="anchor" href="#help"><span class="octicon octicon-link"></span></a>Help</h2>
+
+<p>If there are any improvements or bugs, please leave an issue on <a href="https://github.com/mikeflynn/beats-clj">the GitHub page</a>, reach out to <a href="http://twitter.com/mikeflynn_">@mikeflynn_ on Twitter</a> or create a pull request!</p>
+
+<h2>
+<a name="license" class="anchor" href="#license"><span class="octicon octicon-link"></span></a>License</h2>
+
+<p>Copyright © 2014 Mike Flynn / <a href="http://twitter.com/mikeflynn_">@mikeflynn_</a></p>
+
+<p>Distributed under the Eclipse Public License, the same as Clojure.</p>
         </section>
 
         <aside id="sidebar">
@@ -78,6 +104,16 @@ $ git checkout gh-pages
       </div>
     </div>
 
-  
+            <script type="text/javascript">
+            var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+            document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+          </script>
+          <script type="text/javascript">
+            try {
+              var pageTracker = _gat._getTracker("UA-51642712-1");
+            pageTracker._trackPageview();
+            } catch(err) {}
+          </script>
+
   </body>
 </html>
