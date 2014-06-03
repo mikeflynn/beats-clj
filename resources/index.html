@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Beats Client Application Authentication</title>
+
+  <script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+  <script type="text/javascript" src="//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
+
+  <link rel="stylesheet" type="text/css" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css">
+
+  <script type="text/javascript">
+  var getParam = function(name) {
+    name = name.replace(/[\[]/,"\\\[").replace(/[\]]/,"\\\]");
+    var regexS = "[\\?&]"+name+"=([^&#]*)";
+    var regex = new RegExp( regexS );
+    var results = regex.exec( window.location.href );
+    if( results == null ) {
+      return null;
+    } else {
+      return results[1];
+    }
+  };
+
+  var getUri = function() {
+    return window.location.origin + window.location.pathname;
+  }
+
+  var makeRequest = function (e) {
+    var key = jQuery('#appKey').val();
+    var secret = jQuery('#appSecret').val();
+    var response = jQuery('#appResponse').val();
+
+    var authParams = {
+      state: key + "|" + secret + "|" + response,
+      response_type: response,
+      redirect_uri: getUri(),
+      client_id: key
+    };
+
+    window.location.href = "https://partner.api.beatsmusic.com/v1/oauth2/authorize?" + jQuery.param(authParams);
+  }
+
+  var handleResponse = function() {
+    if(getParam('state') != null) {
+      var state = getParam('state').split('|');
+      jQuery('#appKey').val(state[0]);
+      jQuery('#appSecret').val(state[1]);
+      jQuery('#appResponse').val(state[2]);
+      jQuery('#authUrl').val(getUri());
+      jQuery('#authCode').val(getParam('code'));
+      jQuery('#authToken').val(getParam('access_token'));
+      jQuery('#authExpires').val(getParam('expires_in'));
+      jQuery('#results').show();
+    }
+  };
+  </script>
+</head>
+<body>
+  <div class="container">
+    <h1>Beats Client Authentication</h1>
+
+    <form id="settings" role="form" style="margin-bottom: 20px;">
+      <div class="form-group">
+        <label for="appKey">Application Key</label>
+        <input type="text" class="form-control" id="appKey" placeholder="Enter API Key">
+      </div>
+      <div class="form-group">
+        <label for="appSecret">Application Secret</label>
+        <input type="text" class="form-control" id="appSecret" placeholder="Enter API Secret">
+      </div>
+      <div class="form-group">
+        <label for="appResponse">Response Type</label>
+        <select id="appResponse" class="form-control">
+          <option value="token">Grant (Client Side / Read Only)</option>
+          <option value="code">Code (Server Side / Read & Write)</option>
+        </select>
+      </div>
+      <button type="button" class="btn btn-danger btn-lg" id="authBtn">Login with Beats Music</button>
+    </form>
+
+    <div id="results" class="panel panel-default" style="display: none;">
+      <div class="panel-heading">Authorization Results</div>
+      <div class="panel-body">
+        <form role="form">
+          <div class="form-group">
+            <label for="authToken">Token</label>
+            <input type="text" class="form-control" id="authToken" placeholder="Token">
+          </div>
+          <div class="form-group">
+            <label for="authExpires">Expiration</label>
+            <input type="text" class="form-control" id="authExpires" placeholder="Expires Timestamp">
+          </div>
+          <div class="form-group">
+            <label for="authUrl">Callback URI</label>
+            <input type="text" class="form-control" id="authUrl" placeholder="Callback URI">
+          </div>
+          <div class="form-group">
+            <label for="authCode">Code</label>
+            <input type="text" class="form-control" id="authCode" placeholder="Code (for server side auth)">
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <script type="text/javascript">
+    jQuery('#authBtn').click(makeRequest);
+
+    handleResponse();
+  </script>
+</body>
+</html>
