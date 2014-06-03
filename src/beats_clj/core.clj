@@ -176,7 +176,7 @@
                    :delete)]
     (if (= type :single)
         (let [endpoint (str endpoint "/" track-ids)]
-          (api-request method endpoint {} headers))
+          (api-request method endpoint {} auth))
         (let [batches (partition-all 25 track-ids)]
           (map #(let [params (->> (map (fn [x] (str "ids=" x)) %)
                                   (clojure.string/join "&"))]
