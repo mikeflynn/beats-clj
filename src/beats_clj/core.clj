@@ -52,7 +52,8 @@
 
 (defn- api-request
   "Wrapper to HTTP client that makes the request to the API."
-  [method url params headers & {:keys [forget]}]
+  [method url params headers & {:keys [forget resp]
+                                :or {resp :json}}]
   (when (not *app-secret*) (throw (Exception. "Missing Beats app secret!")))
   (when (not *app-key*) (throw (Exception. "Missing Beats app key!")))
   (when (> (swap! rate-counter inc) max-per-second)
@@ -62,12 +63,15 @@
         response (send-http method url (clean-params params) headers)]
     (if (not forget)
         (try
-          (let [body (->> (:body @response)
-                          json/parse-string
-                          clojure.walk/keywordize-keys)]
-            (if (= (:code body) "OK")
-              body
-              (throw (Exception. (:message body)))))
+          (case resp
+            :json (let [body (->> (:body @response)
+                            json/parse-string
+                            clojure.walk/keywordize-keys)]
+                    (if (= (:code body) "OK")
+                        body
+                        (throw (Exception. (:message body)))))
+            :raw @response
+            :url {:url (get-in @response [:opts :url])})
           (catch Exception e {:error (.getMessage e)})))))
 
 (defn search
@@ -87,7 +91,7 @@
   (api-request :get (str "/api/tracks/" track-id) {} false))
 
 (defn playlist-add
-  "Add a given tracks to a given playlist; Adds track in batches of 25; Returns nil (auth required)"
+  "Add a given tracks to a given playlist; Adds track in batches of 25; Returns nil (Requires auth token.)"
   [playlist-id track-ids & {:keys [auth append]
                             :or {append true}}]
   (check-auth auth)
@@ -102,7 +106,7 @@
               (api-request method endpoint params headers :forget true))))))
 
 (defn playlist-list
-  "Show all playlists in the given account. (auth required)"
+  "Show all playlists in the given account. (Requires auth token.)"
   [user-id & {:keys [auth offset limit order-by]
               :or {offset 0 limit 100 order-by "updated_at desc"}}]
   (check-auth auth)
@@ -115,7 +119,7 @@
     (api-request :get endpoint params headers)))
 
 (defn playlist-get
-  "Returns the contents of a given playlist. (auth required)"
+  "Returns the contents of a given playlist. (Requires auth token.)"
   [playlist-id & {:keys [auth]}]
   (check-auth auth)
   (let [endpoint (str "/api/playlists/" playlist-id)
@@ -123,7 +127,7 @@
     (api-request :get endpoint {} headers)))
 
 (defn playlist-create
-  "Creates a new playlist. (auth required)"
+  "Creates a new playlist. (Requires auth token.)"
   [playlist-name & {:keys [auth description access]}]
   (check-auth auth)
   (let [endpoint "/api/playlists"
@@ -144,13 +148,13 @@
     (api-request :post "/oauth/token" params false)))
 
 (defn me
-  "Get the authenticated user's user_id. (auth required)"
+  "Get the authenticated user's user_id. (Requires auth token.)"
   [& {:keys [auth]}]
   (check-auth auth)
   (api-request :get "/api/me" {} {"Authorization" (str "Bearer" auth)}))
 
 (defn library-list
-  "Returns a page of tracks / albums / artists from the auth'd user's library. (auth required)"
+  "Returns a page of tracks / albums / artists from the auth'd user's library. (Requires auth token.)"
   [user-id & {:keys [auth type offset limit order-by]
               :or {type :tracks}}]
   (check-auth auth)
@@ -162,7 +166,7 @@
     (api-request :get endpoint params headers)))
 
 (defn library-modify
-  "Add or remove one or more tracks to your library; Returns nil (auth required)"
+  "Add or remove one or more tracks to your library; Returns nil (Requires auth token.)"
   [user-id track-ids & {:keys [action auth]
                         :or {action :remove}}]
   (check-auth auth)
@@ -181,12 +185,12 @@
             (api-request method endpoint params headers :forget true)))))))
 
 (defn library-add
-  "Alias of library-modify with action set to :add. (auth required)"
+  "Alias of library-modify with action set to :add. (Requires auth token.)"
   [user-id track-ids & {:keys [auth]}]
   (library-modify user-id track-ids :auth auth :action :add))
 
 (defn library-remove
-  "Alias of library-modify with action set to :remove. (auth required)"
+  "Alias of library-modify with action set to :remove. (Requires auth token.)"
   [user-id track-ids & {:keys [auth]}]
   (library-modify user-id track-ids :auth auth :action :remove))
 
@@ -194,11 +198,12 @@
   "Returns default image for albums, genres, artists, tracks, playlists and users."
   [type id & {:keys [size]
               :or {size :medium}}]
-  (let [type (filter #(= % type) [:albums :genres :artists :tracks :playlists :users])
-        size (filter #(= % type) [:thumb :small :medium :large])]
-    (if (or (empty? type) (empty? size))
+  (let [type (first (filter #(= % type) [:albums :genres :artists :tracks :playlists :users]))
+        size (first (filter #(= % size) [:thumb :small :medium :large]))
+        endpoint (str "/api/" (name type) "/" id "/images/default")]
+    (if (or (nil? type) (nil? size))
         (throw (Exception. "Invalid size or type for beats/image"))
-        (api-request :get (str "/api/" (name type) "/" id "/images/default") {:size size} {}))))
+        (api-request :get endpoint {:size (name size)} {} :resp :url))))
 
 (defn artist-get
   "Get an data object for a given artist."
@@ -220,22 +225,22 @@
   (let [endpoint (str "/api/artists/" artist-id "/" (when essential "essential_") "albums")
         params {:offset offset
                 :limit limit
-                :order_by order-by
-                :filters (streamable-filters :now streamable :future future_streamable :never never_streamable)}]
-    (api-request :get endpoint params {})))
+                :order_by order-by}
+        filters (streamable-filters :now streamable :future future_streamable :never never_streamable)]
+    (api-request :get (str endpoint "?" filters) params {})))
 
 (defn artist-list-tracks
   "Get a list of tracks for a given artist."
-  [artist-id & {:keys [ offset limit order-by streamable future_streamable never_streamable]}]
+  [artist-id & {:keys [offset limit order-by streamable future_streamable never_streamable]}]
   (let [endpoint (str "/api/artists/" artist-id "/tracks")
         params {:offset offset
                 :limit limit
-                :order_by order-by
-                :filters (streamable-filters :now streamable :future future_streamable :never never_streamable)}]
-    (api-request :get endpoint params {})))
+                :order_by order-by}
+        filters (streamable-filters :now streamable :future future_streamable :never never_streamable)]
+    (api-request :get (str endpoint "?" filters) params {})))
 
 (defn audio-get
-  "Get an data object for a given artist. (auth required)"
+  "Get an data object for a given artist. (Requires auth token.)"
   [track-id & {:keys [auth]}]
   (check-auth auth)
   (api-request :get (str "/api/tracks/" track-id "/audio") {} {"Authorization" (str "Bearer" auth)}))
@@ -248,23 +253,24 @@
       (api-request :get "/api/genres" params {})))
 
 (defn genre-get
-  "Get an data object for a given artist."
-  [genre-id]
-  (api-request :get (str "/api/genres/" genre-id) {} {}))
+  "Get an data object for a given artist. (Requires auth token.)"
+  [genre-id & {:keys [auth]}]
+  (api-request :get (str "/api/genres/" genre-id) {} {"Authorization" (str "Bearer" auth)}))
 
 (defn genre-list
-  "Get a list of items for a specific genre."
-  [genre-id type & {:keys [limit offset]}]
-  (let [type (filter #(= % type) [:editors_picks :featured :new_releases :bios :playlists])
+  "Get a list of items for a specific genre. (Requires auth token.)"
+  [genre-id type & {:keys [auth limit offset]}]
+  (let [type (first (filter #(= % type) [:editors_picks :featured :new_releases :bios :playlists]))
         params {:limit limit
                 :offset offset}
-        endoint (str "/api/genres/" genre-id "/" (name type))]
-    (if (empty? type)
+        endoint (str "/api/genres/" genre-id "/" (name type))
+        headers {"Authorization" (str "Bearer" auth)}]
+    (if (nil? type)
         (throw (Exception. "Invalid type for beats/genre-list"))
-        (api-request :get (str "/api/genres/" genre-id) params {}))))
+        (api-request :get (str "/api/genres/" genre-id) params headers))))
 
 (defn recommendations
-  "Get the list of recommended content for a user at a given time of day. (auth required)"
+  "Get the list of recommended content for a user at a given time of day. (Requires auth token.)"
   [user-id & {:keys [auth timezone timestamp offset limit]
                                   :or {timezone "-0800"}}]
   (let [endpoint (str "/api/users/" user-id "/recs/just_for_you")
@@ -275,7 +281,7 @@
     (api-request :get endpoint params headers)))
 
 (defn sentence-options
-  "Retrieve IDs for sentence creation. (auth required)"
+  "Retrieve IDs for sentence creation. (Requires auth token.)"
   [user-id & {:keys [auth timezone timestamp]
               :or {timezone "-0800"}}]
   (check-auth auth)
@@ -286,7 +292,7 @@
     (api-request :get endpoint params headers)))
 
 (defn sentence
-  "Retrieve the tracks for a given sentence. (auth required)"
+  "Retrieve the tracks for a given sentence. (Requires auth token.)"
   [user-id place-id activity-id people-id genre-id & {:keys [auth timezone skipped]}]
   (check-auth auth)
   (let [endpoint (str "/api/users/" user-id "/recs/the_sentence_options")
