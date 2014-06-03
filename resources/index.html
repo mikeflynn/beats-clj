@@ -21,14 +21,19 @@
     }
   };
 
+  var getUri = function() {
+    return window.location.origin + window.location.pathname;
+  }
+
   var makeRequest = function (e) {
     var key = jQuery('#appKey').val();
     var secret = jQuery('#appSecret').val();
+    var response = jQuery('#appResponse').val();
 
     var authParams = {
-      state: key + "|" + secret,
-      response_type: "token",
-      redirect_uri: window.location.href,
+      state: key + "|" + secret + "|" + response,
+      response_type: response,
+      redirect_uri: getUri(),
       client_id: key
     };
 
@@ -36,10 +41,13 @@
   }
 
   var handleResponse = function() {
-    if(getParam('access_token') != null) {
+    if(getParam('state') != null) {
       var state = getParam('state').split('|');
       jQuery('#appKey').val(state[0]);
       jQuery('#appSecret').val(state[1]);
+      jQuery('#appResponse').val(state[2]);
+      jQuery('#authUrl').val(getUri());
+      jQuery('#authCode').val(getParam('code'));
       jQuery('#authToken').val(getParam('access_token'));
       jQuery('#authExpires').val(getParam('expires_in'));
       jQuery('#results').show();
@@ -60,6 +68,13 @@
         <label for="appSecret">Application Secret</label>
         <input type="text" class="form-control" id="appSecret" placeholder="Enter API Secret">
       </div>
+      <div class="form-group">
+        <label for="appResponse">Response Type</label>
+        <select id="appResponse" class="form-control">
+          <option value="token">Grant (Client Side / Read Only)</option>
+          <option value="code">Code (Server Side / Read & Write)</option>
+        </select>
+      </div>
       <button type="button" class="btn btn-danger btn-lg" id="authBtn">Login with Beats Music</button>
     </form>
 
@@ -74,6 +89,14 @@
           <div class="form-group">
             <label for="authExpires">Expiration</label>
             <input type="text" class="form-control" id="authExpires" placeholder="Expires Timestamp">
+          </div>
+          <div class="form-group">
+            <label for="authUrl">Callback URI</label>
+            <input type="text" class="form-control" id="authUrl" placeholder="Callback URI">
+          </div>
+          <div class="form-group">
+            <label for="authCode">Code</label>
+            <input type="text" class="form-control" id="authCode" placeholder="Code (for server side auth)">
           </div>
         </form>
       </div>
