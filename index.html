@@ -63,14 +63,14 @@ Beats Music API: <a href="https://developer.beatsmusic.com/docs">developer.beats
   <span class="p">(</span><span class="nf">beats/set-app-secret!</span> <span class="s">"yyyyyyy"</span><span class="p">)</span>
 </pre></div>
 
-<p>You can see <a href="#">the full documentation here</a>.</p>
+<p>You can see <a href="doc">the full documentation here</a>.</p>
 
 <h2>
 <a name="authorization" class="anchor" href="#authorization"><span class="octicon octicon-link"></span></a>Authorization</h2>
 
 <p>The Beats API has both public, meaning only an API key is required, and private, meaning an authorization token from a valid Beats Music subscriber is required, endpoints. This library does not fully implement the OAuth2 handshake as it is a server-side library. To get a user's authentication token, and instead provides the API actions that accept the authentication token as an parameter.</p>
 
-<p>I've included <a href="#">a simple HTML file in the /resources directory</a> that will preform the OAuth2 handshake (once configured with your application credentials) and will output your authentication token. This can be used to get tokens for testing and serve as a reference point for implementation the full OAuth2 interaction in your application.</p>
+<p>I've included <a href="resources">a simple HTML file in the /resources directory</a> that will preform the OAuth2 handshake (once configured with your application credentials) and will output your authentication token. This can be used to get tokens for testing and serve as a reference point for implementation the full OAuth2 interaction in your application.</p>
 
 <p><em>Note: Be sure to update your Beats Application with the OAuth callback url of your test HTML file or you will get an error.</em></p>
 
