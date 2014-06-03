@@ -3,10 +3,17 @@
             [org.httpkit.client :as http]
             [cheshire.core :as json]))
 
+; Config Parameters
 (def #^{:no-doc true} base-url "https://partner.api.beatsmusic.com/v1")
 (def #^{:dynamic true :no-doc true} *app-key* false)
 (def #^{:dynamic true :no-doc true} *app-secret* false)
 
+; Rate Limiting
+(def #^{:no-doc true} rate-counter (atom 0))
+(def #^{:no-doc true} max-per-second 15)
+(future (while true (do (Thread/sleep 1000) (reset! rate-counter 0))))
+
+; Main
 (defn set-app-key!
   "Set the application (client) key (ID) for the library."
   [app-key]
@@ -20,12 +27,12 @@
 (defmulti ^:no-doc send-http (fn [method url params headers] method))
 
 (defmethod send-http :get [method url params headers]
-  (http/get (str base-url url) {:timeout 200
+  (http/get (str base-url url) {:timeout 2000
                                 :headers headers
                                 :query-params params}))
 
 (defmethod send-http :post [method url params headers]
-  (http/post (str base-url url) {:timeout 200
+  (http/post (str base-url url) {:timeout 2000
                                  :headers headers
                                  :form-params params}))
 
@@ -46,6 +53,8 @@
 (defn- api-request
   "Wrapper to HTTP client that makes the request to the API."
   [method url params headers & {:keys [forget]}]
+  (when (> (swap! rate-counter inc) max-per-second)
+        (Thread/sleep 1000))
   (let [params (if (not (contains? params "client_id")) (assoc params :client_id *app-key*) params)
         headers (if (not headers) {} headers)
         response (send-http method url (clean-params params) headers)]
@@ -56,8 +65,8 @@
                           clojure.walk/keywordize-keys)]
             (if (= (:code body) "OK")
               body
-              false))
-          (catch Exception e false)))))
+              (throw (Exception. (:message body)))))
+          (catch Exception e {:error (.getMessage e)})))))
 
 (defn search
   "Search for tracks or albums."
@@ -66,10 +75,9 @@
   (let [endpoint {:standard "/api/search"
                   :federated "/api/search/federated"
                   :predictive "/api/search/predictive"}
-        params (into {} (filter #(not (nil? (val %))) {:q q :type entity-type}))]
-    (try
-      (api-request :get (get endpoint search-type) params false)
-    (catch Exception e {}))))
+        params {:q q
+                :type entity-type}]
+    (api-request :get (get endpoint search-type) params false)))
 
 (defn track-get
   "Gets information about a specific track."
