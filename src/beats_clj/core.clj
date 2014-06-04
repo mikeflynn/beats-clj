@@ -290,7 +290,8 @@
 
 (defn sentence
   "Retrieve the tracks for a given sentence. (Requires auth token.)"
-  [user-id place-id activity-id people-id genre-id & {:keys [auth timezone skipped]}]
+  [user-id place-id activity-id people-id genre-id & {:keys [auth timezone skipped]
+                                                      :or {timezone "-0800"}}]
   (check-auth auth)
   (let [endpoint (str "/v1/api/users/" user-id "/recs/the_sentence_options")
         params {:time_zone timezone
