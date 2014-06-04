@@ -63,17 +63,19 @@
         headers (if auth-token (assoc headers "Authorization" (str "Bearer " auth-token)) headers)
         response (send-http method url (clean-params params) headers)]
     (if (not forget)
-        (try
-          (case resp
-            :json (let [body (->> (:body @response)
-                            json/parse-string
-                            clojure.walk/keywordize-keys)]
-                    (if (= (:code body) "OK")
-                        body
-                        (throw (Exception. (:message body)))))
-            :raw @response
-            :url {:url (get-in @response [:opts :url])})
-          (catch Exception e {:error (.getMessage e)})))))
+        (if (get-in @response [:headers :x-mashery-error-code])
+            (throw (Exception. (get-in @response [:headers :x-mashery-error-code])))
+            (try
+              (case resp
+                :json (let [body (->> (:body @response)
+                                      json/parse-string
+                                      clojure.walk/keywordize-keys)]
+                        (if (= (:code body) "OK")
+                            body
+                            (throw (Exception. (:message body)))))
+                :raw @response
+                :url {:url (get-in @response [:opts :url])})
+              (catch Exception e {:error (.getMessage e)}))))))
 
 (defn search
   "Search for tracks or albums."
