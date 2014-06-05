@@ -147,7 +147,7 @@
                 :redirect_uri redirect-uri
                 :code code
                 :grant_type "authorization_code"}]
-    (api-request :post "/oauth/token" params false)))
+    (api-request :post "/oauth2/token" params false)))
 
 (defn me
   "Get the authenticated user's user_id. (Requires auth token.)"
