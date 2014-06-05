@@ -1,0 +1,33 @@
+a {
+  color: #E31937;
+}
+
+header {
+  background: #000 url('http://blog.beatsmusic.com/wp-content/uploads/2014/05/play-schematic-1100x618.jpg') no-repeat;
+  font-family: neuzeit_groteskblack,"Helvetica Neue",sans-serif !important;
+}
+
+header h2 {
+  text-transform: uppercase;
+  color: white;
+}
+
+aside#sidebar { background-image: none; }
+
+#main-content h2:before,
+#main-content h1:before {
+  content: "";
+}
+
+#main-content h1,
+#main-content h2 {
+  font-family: neuzeit_groteskblack,"Helvetica Neue",sans-serif !important;
+  text-transform: uppercase;
+}
+
+aside a.button {
+  background: none;
+  font-family: neuzeit_groteskblack,"Helvetica Neue",sans-serif !important;
+  padding: 0px;
+  color: #E31937;
+}
