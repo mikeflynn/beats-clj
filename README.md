@@ -35,6 +35,8 @@ Be sure to set your Beats API Application Key and Secret:
 
 You can see [the full documentation here](http://mikeflynn.github.io/beats-clj/doc/).
 
+While the [Beats Music API documentation is here](https://developer.beatsmusic.com/docs).
+
 ## Authorization
 
 The Beats API has both public, meaning only an API key is required, and private, meaning an authorization token from a valid Beats Music subscriber is required, endpoints. This library does not fully implement the OAuth2 handshake as it is a server-side library. To get a user's authentication token, and instead provides the API actions that accept the authentication token as an parameter.
