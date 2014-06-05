@@ -36,6 +36,16 @@
                                  :headers headers
                                  :form-params params}))
 
+(defmethod send-http :put [method url params headers]
+  (http/put (str base-url url) {:timeout 2000
+                                 :headers headers
+                                 :query-params params}))
+
+(defmethod send-http :delete [method url params headers]
+  (http/delete (str base-url url) {:timeout 2000
+                                 :headers headers
+                                 :query-params params}))
+
 (defn- check-auth
   "Checks for auth token."
   [token]
@@ -98,17 +108,16 @@
 
 (defn playlist-add
   "Add a given tracks to a given playlist; Adds track in batches of 25; Returns nil (Requires auth token.)"
-  [playlist-id track-ids & {:keys [auth append]
-                            :or {append true}}]
+  [playlist-id track-ids & {:keys [auth mode]
+                            :or {mode :append}}]
   (check-auth auth)
   (let [endpoint (str "/v1/api/playlists/" playlist-id "/tracks")
-        method {:update :put
-                :append :post}
+        method (get {:update :put :append :post} mode :post)
         track-ids (filter #(= (subs % 0 2) "tr") track-ids)
         batches (partition-all 25 track-ids)]
-    (map #((let [params (->> (map (fn [x] (str "track_ids=" x)) %)
-                              (clojure.string/join "&"))]
-              (api-request method endpoint params auth :forget true))))))
+    (map #(let [query (->> (map (fn [x] (str "track_ids=" x)) %)
+                           (clojure.string/join "&"))]
+              (api-request method (str endpoint "?" query) {} auth :forget true)) batches)))
 
 (defn playlist-list
   "Show all playlists in the given account. (Requires auth token.)"
@@ -136,8 +145,25 @@
   (let [endpoint "/v1/api/playlists"
         params {:name playlist-name
                 :description description
-                :access access}]
+                :access (when access (name access))}]
     (api-request :post endpoint params auth)))
+
+(defn playlist-update
+  "Updates a given playlist. (Requires auth token.)"
+  [playlist-id playlist-name & {:keys [auth description access]}]
+  (check-auth auth)
+  (let [endpoint (str "/v1/api/playlists/" playlist-id)
+        params {:name playlist-name
+                :description description
+                :access (when access (name access))}]
+    (api-request :put endpoint params auth)))
+
+(defn playlist-delete
+  "Deletes a new playlist. (Requires auth token.)"
+  [playlist-id & {:keys [auth]}]
+  (check-auth auth)
+  (let [endpoint (str "/v1/api/playlists/" playlist-id)]
+    (api-request :delete endpoint {} auth)))
 
 (defn token-request
   "Returns an auth token for a given user."
@@ -169,20 +195,15 @@
 (defn library-modify
   "Add or remove one or more tracks to your library; Returns nil (Requires auth token.)"
   [user-id track-ids & {:keys [action auth]
-                        :or {action :remove}}]
+                        :or {action :add}}]
   (check-auth auth)
-  (let [type (if (= (type track-ids) "java.lang.String") :single :batch)
-        endpoint (str "/v1/api/users" user-id "/mymusic")
-        method (if (= action :add)
-                   (get {:single :put :batch :post} type)
-                   :delete)]
-    (if (= type :single)
-        (let [endpoint (str endpoint "/" track-ids)]
-          (api-request method endpoint {} auth))
-        (let [batches (partition-all 25 track-ids)]
-          (map #(let [params (->> (map (fn [x] (str "ids=" x)) %)
-                                  (clojure.string/join "&"))]
-            (api-request method endpoint params auth :forget true)))))))
+  (let [track-ids (if (not (coll? track-ids)) (vector track-ids) track-ids)
+        endpoint (str "/v1/api/users/" user-id "/mymusic")
+        method (if (= action :add) :post :delete)
+        batches (partition-all 25 track-ids)]
+    (map #(let [query (->> (map (fn [x] (str "ids=" x)) %)
+                           (clojure.string/join "&"))]
+            (api-request method (str endpoint "?" query) {} auth :forget true)) batches)))
 
 (defn library-add
   "Alias of library-modify with action set to :add. (Requires auth token.)"
