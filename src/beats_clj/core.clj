@@ -1,7 +1,8 @@
 (ns beats-clj.core
   (:require [clojure.java.io :as io]
             [org.httpkit.client :as http]
-            [cheshire.core :as json]))
+            [cheshire.core :as json]
+            [clojure.walk :as walk]))
 
 ; Config Parameters
 (def #^{:no-doc true} base-url "https://partner.api.beatsmusic.com")
@@ -79,7 +80,7 @@
               (case resp
                 :json (let [body (->> (:body @response)
                                       json/parse-string
-                                      clojure.walk/keywordize-keys)]
+                                      walk/keywordize-keys)]
                         (if (= (:code body) "OK")
                             body
                             (throw (Exception. (:message body)))))

@@ -7,9 +7,7 @@ Beats Music API: [developer.beatsmusic.com/docs](https://developer.beatsmusic.co
 
 `beats-clj` is available as a Maven artifact from [Clojars](https://clojars.org/beats-clj):
 
-```clojure
-  [beats-clj "0.9.0"]
-```
+![](https://clojars.org/beats-clj/latest-version.svg)
 
 ## Usage
 

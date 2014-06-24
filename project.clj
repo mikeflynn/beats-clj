@@ -1,4 +1,4 @@
-(defproject beats-clj "0.9.0"
+(defproject beats-clj "0.9.1"
   :description "A Clojure library to interact with the Beats Music API."
   :url "https://mikeflynn.github.io/beats-clj"
   :license {:name "Eclipse Public License"
