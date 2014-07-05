@@ -83,7 +83,8 @@
                                       walk/keywordize-keys)]
                         (if (= (:code body) "OK")
                             body
-                            (throw (Exception. (:message body)))))
+                            (throw (Exception. (if (:message body) (:message body)
+                                                                   "Error or blank response from Beats Platform.")))))
                 :raw @response
                 :url {:url (get-in @response [:opts :url])})
               (catch Exception e {:error (.getMessage e)}))))))
