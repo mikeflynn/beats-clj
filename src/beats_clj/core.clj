@@ -316,7 +316,7 @@
   [user-id place-id activity-id people-id genre-id & {:keys [auth timezone skipped]
                                                       :or {timezone "-0800"}}]
   (check-auth auth)
-  (let [endpoint (str "/v1/api/users/" user-id "/recs/the_sentence_options")
+  (let [endpoint (str "/v1/api/users/" user-id "/recs/the_sentence")
         params {:time_zone timezone
                 :skipped skipped
                 :place place-id
