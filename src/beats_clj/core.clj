@@ -87,7 +87,8 @@
                                                                    "Error or blank response from Beats Platform.")))))
                 :raw @response
                 :url {:url (get-in @response [:opts :url])})
-              (catch Exception e {:error (.getMessage e)}))))))
+              (catch Exception e {:error (.getMessage e)})))
+        true)))
 
 (defn search
   "Search for tracks or albums."
@@ -110,16 +111,17 @@
 
 (defn playlist-add
   "Add a given tracks to a given playlist; Adds track in batches of 25; Returns nil (Requires auth token.)"
-  [playlist-id track-ids & {:keys [auth mode]
-                            :or {mode :append}}]
+  [playlist-id track-ids & {:keys [auth mode async]
+                            :or {mode :append async true}}]
   (check-auth auth)
   (let [endpoint (str "/v1/api/playlists/" playlist-id "/tracks")
         method (get {:update :put :append :post} mode :post)
         track-ids (filter #(= (subs % 0 2) "tr") track-ids)
-        batches (partition-all 25 track-ids)]
+        batches (partition-all 25 track-ids)
+        forget (if async true false)]
     (map #(let [query (->> (map (fn [x] (str "track_ids=" x)) %)
                            (clojure.string/join "&"))]
-              (api-request method (str endpoint "?" query) {} auth :forget true)) batches)))
+              (api-request method (str endpoint "?" query) {} auth :forget forget)) batches)))
 
 (defn playlist-list
   "Show all playlists in the given account. (Requires auth token.)"
@@ -196,16 +198,17 @@
 
 (defn library-modify
   "Add or remove one or more tracks to your library; Returns nil (Requires auth token.)"
-  [user-id track-ids & {:keys [action auth]
-                        :or {action :add}}]
+  [user-id track-ids & {:keys [action auth async]
+                        :or {action :add async true}}]
   (check-auth auth)
   (let [track-ids (if (not (coll? track-ids)) (vector track-ids) track-ids)
         endpoint (str "/v1/api/users/" user-id "/mymusic")
         method (if (= action :add) :post :delete)
-        batches (partition-all 25 track-ids)]
+        batches (partition-all 25 track-ids)
+        forget (if async true false)]
     (map #(let [query (->> (map (fn [x] (str "ids=" x)) %)
                            (clojure.string/join "&"))]
-            (api-request method (str endpoint "?" query) {} auth :forget true)) batches)))
+            (api-request method (str endpoint "?" query) {} auth :forget forget)) batches)))
 
 (defn library-add
   "Alias of library-modify with action set to :add. (Requires auth token.)"
