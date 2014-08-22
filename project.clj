@@ -7,4 +7,4 @@
                  [cheshire "5.3.1"]
                  [http-kit "2.1.16"]]
   :plugins [[codox "0.8.8"]]
-  :codox {:src-dir-uri "https://github.com/mikeflynn/beats-clj/tree/master"})
+  :codox {:src-dir-uri "https://github.com/mikeflynn/beats-clj/tree/master/"})
