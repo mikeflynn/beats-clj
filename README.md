@@ -49,6 +49,6 @@ If there are any improvements or bugs, please leave an issue on [the GitHub page
 
 ## License
 
-Copyright © 2014 Mike Flynn / [@mikeflynn_](http://twitter.com/mikeflynn_)
+Copyright © 2014 Mike Flynn / [@thatmikeflynn](http://twitter.com/thatmikeflynn)
 
 Distributed under the Eclipse Public License, the same as Clojure.
