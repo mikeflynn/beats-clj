@@ -10,9 +10,15 @@
 (def #^{:dynamic true :no-doc true} *app-secret* false)
 
 ; Rate Limiting
+(def #^{:dynamic true} *rate-counter-on* false)
+(def #^{:no-doc true} rate-counter-on false)
 (def #^{:no-doc true} rate-counter (atom 0))
 (def #^{:no-doc true} max-per-second 15)
-(future (while true (do (Thread/sleep 1000) (reset! rate-counter 0))))
+
+(defn start-rate-counter []
+  (when (not *rate-counter-on*)
+        (do (future (while true (do (Thread/sleep 1000) (reset! rate-counter 0))))
+            (alter-var-root (var *rate-counter-on*) (fn [_] true)))))
 
 ; Main
 (defn set-app-key!
@@ -67,6 +73,7 @@
                                    :or {resp :json}}]
   (when (not *app-secret*) (throw (Exception. "Missing Beats app secret!")))
   (when (not *app-key*) (throw (Exception. "Missing Beats app key!")))
+  (start-rate-counter)
   (when (> (swap! rate-counter inc) max-per-second)
         (Thread/sleep 1000))
   (let [params (if (not (contains? params "client_id")) (assoc params :client_id *app-key*) params)
