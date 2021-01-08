@@ -1,3 +1,9 @@
+## Update - 2021.01.08
+
+_RIP Beats. This repo has been archived._
+
+_Original README follows..._
+
 # `beats-clj`
 
 A Clojure library to interact with the Beats Music API.
